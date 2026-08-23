@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split Pro</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --text: #1e293b;
+        }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 20px; line-height: 1.5; }
+        .card { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h1 { margin: 0 0 0.5rem; font-size: 1.5rem; }
+        .section { margin-bottom: 1.2rem; }
+        label { display: block; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.5rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+        input, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 15px; transition: border-color 0.2s; box-sizing: border-box; }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); }
+        textarea { height: 180px; font-family: 'ui-monospace', monospace; margin-bottom: 4px; }
+        
+        .guide { font-size: 0.75rem; background: #f1f5f9; padding: 10px; border-radius: 8px; margin-bottom: 1rem; color: #475569; }
+        .guide code { color: var(--primary); font-weight: bold; }
+
+        .error-box { color: var(--danger); font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; display: none; padding: 8px; border-radius: 6px; background: #fef2f2; }
+
+        .results-area { background: #f1f5f9; padding: 1.5rem; border-radius: 12px; margin-top: 1rem; }
+        .person-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .bar-container { flex-grow: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; position: relative; }
+        .bar-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
+        .name-label { width: 85px; font-weight: 500; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .amount-label { width: 85px; text-align: right; font-weight: 700; font-size: 0.9rem; }
+
+        .summary-footer { margin-top: 15px; padding-top: 15px; border-top: 2px dashed #cbd5e1; }
+        .summary-line { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .subtotal-line { font-size: 0.9rem; color: #64748b; font-weight: 500; }
+        .grand-total-line { font-weight: 800; font-size: 1.15rem; color: var(--text); margin-top: 5px; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 1rem; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: flex; justify-content: center; align-items: center; gap: 6px; transition: filter 0.2s; }
+        button:hover { filter: brightness(0.95); }
+        .btn-copy { background: var(--secondary); color: white; }
+        .btn-png { background: var(--primary); color: white; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>💸 Split Pro</h1>
+    
+    <div class="section">
+        <label>Names</label>
+        <input type="text" id="people" placeholder="Andy, Bobby, Chloe" oninput="calculate()">
+    </div>
+
+    <div class="guide">
+        <code>eq</code> (all) | <code>prop</code> (tax/tip) | <code>for Name xQty</code> (custom qty) | <code>-val</code> (discount)
+    </div>
+
+    <div class="section">
+        <label>Items</label>
+        <textarea id="items" placeholder="2 steak 29 for Andy, Bobby&#10;7 beer 35 for Andy x5, Bobby x2&#10;fish 17 for Chloe&#10;drink 32 eq&#10;discount -5 eq&#10;tips 15% prop" oninput="calculate()"></textarea>
+        <div id="name-warning" class="error-box"></div>
+    </div>
+
+    <div id="output" class="results-area"></div>
+
+    <div class="btn-group">
+        <button class="btn-copy" onclick="copySummary()">📋 Copy Text</button>
+        <button class="btn-png" onclick="exportPNG()">🖼️ Save PNG</button>
+    </div>
+</div>
+
+<canvas id="exportCanvas"></canvas>
+
+<script>
+let currentTotals = {};
+let currentSubtotal = 0;
+let currentGrandTotal = 0;
+
+function calculate() {
+    const peopleInput = document.getElementById('people').value;
+    const itemsInput = document.getElementById('items').value;
+    const warningBox = document.getElementById('name-warning');
+    
+    const people = peopleInput.split(',').map(p => p.trim()).filter(p => p !== "");
+    const peopleLower = people.map(p => p.toLowerCase());
+    
+    if (people.length === 0) {
+        document.getElementById('output').innerHTML = "Enter names to see results...";
+        warningBox.style.display = 'none';
+        return;
+    }
+
+    let totals = {};
+    people.forEach(p => totals[p] = 0);
+
+    const lines = itemsInput.split('\n');
+    let subtotal = 0;
+    let propItems = [];
+    let unknownNames = new Set();
+
+    lines.forEach(line => {
+        const cleanLine = line.trim().toLowerCase();
+        if (!cleanLine) return;
+
+        const amountMatch = cleanLine.match(/(-?\d+(\.\d+)?)\s*(%|for|eq|prop)/i) || cleanLine.match(/(-?\d+(\.\d+)?)/);
+        if (!amountMatch) return;
+        const val = parseFloat(amountMatch[1]);
+
+        if (cleanLine.includes('prop')) {
+            propItems.push({ line: cleanLine, val: val });
+        } else if (cleanLine.includes('eq')) {
+            const share = val / people.length;
+            people.forEach(p => totals[p] += share);
+            subtotal += val;
+        } else if (cleanLine.includes('for')) {
+            const namesPart = cleanLine.split('for')[1] || "";
+            const entries = namesPart.split(',').map(e => e.trim()).filter(e => e !== "");
+            
+            let targets = [];
+            let totalUnits = 0;
+
+            entries.forEach(entry => {
+                const parts = entry.split('x');
+                const rawName = parts[0].trim();
+                const qty = parts[1] ? parseFloat(parts[1]) : 1;
+
+                if (rawName && !peopleLower.includes(rawName)) {
+                    unknownNames.add(rawName);
+                }
+
+                const matchedName = people.find(p => p.toLowerCase() === rawName);
+                if (matchedName && !isNaN(qty) && qty > 0) {
+                    targets.push({ name: matchedName, qty: qty });
+                    totalUnits += qty;
+                }
+            });
+
+            if (targets.length > 0 && totalUnits > 0) {
+                const unitPrice = val / totalUnits;
+                targets.forEach(target => {
+                    totals[target.name] += unitPrice * target.qty;
+                });
+                subtotal += val;
+            }
+        }
+    });
+
+    if (unknownNames.size > 0) {
+        warningBox.innerText = `⚠️ Unknown names: ${Array.from(unknownNames).join(', ')}`;
+        warningBox.style.display = 'block';
+    } else {
+        warningBox.style.display = 'none';
+    }
+
+    let propTotal = 0;
+    propItems.forEach(item => {
+        const isPercent = item.line.includes('%');
+        const currentTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+        if (currentTotal === 0) return;
+
+        const chargeAmount = isPercent ? (currentTotal * (item.val / 100)) : item.val;
+        propTotal += chargeAmount;
+        
+        people.forEach(p => {
+            const ratio = totals[p] / currentTotal;
+            totals[p] += chargeAmount * ratio;
+        });
+    });
+
+    currentTotals = totals;
+    currentSubtotal = subtotal;
+    currentGrandTotal = subtotal + propTotal;
+
+    render(totals, subtotal, currentGrandTotal);
+}
+
+function render(totals, subtotal, grandTotal) {
+    const container = document.getElementById('output');
+    let maxVal = Math.max(...Object.values(totals), 0.01); 
+    let html = '<label>Summary</label>';
+
+    for (const [name, amount] of Object.entries(totals)) {
+        const displayWidth = Math.max(0, (amount / maxVal) * 100);
+        html += `
+            <div class="person-row">
+                <div class="name-label">${name}</div>
+                <div class="bar-container">
+                    <div class="bar-fill" style="width: ${displayWidth}%"></div>
+                </div>
+                <div class="amount-label">$${amount.toFixed(2)}</div>
+            </div>`;
+    }
+
+    html += `
+        <div class="summary-footer">
+            <div class="summary-line subtotal-line">
+                <span>Subtotal (Receipt Base)</span>
+                <span>$${subtotal.toFixed(2)}</span>
+            </div>
+            <div class="summary-line grand-total-line">
+                <span>GRAND TOTAL</span>
+                <span>$${grandTotal.toFixed(2)}</span>
+            </div>
+        </div>`;
+    container.innerHTML = html;
+}
+
+function copySummary() {
+    const rows = document.querySelectorAll('.person-row');
+    const sub = document.querySelector('.subtotal-line span:last-child').innerText;
+    const total = document.querySelector('.grand-total-line span:last-child').innerText;
+    
+    let text = `🧾 *Bill Split Summary*\n---\n`;
+    rows.forEach(row => {
+        text += `${row.querySelector('.name-label').innerText}: ${row.querySelector('.amount-label').innerText}\n`;
+    });
+    text += `---\nSubtotal: ${sub}\n*Grand Total: ${total}*`;
+
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.innerText = "✅ Copied!";
+        setTimeout(() => btn.innerText = "📋 Copy Text", 2000);
+    });
+}
+
+// Helper to wrap text into multi-line arrays
+function getWrappedLines(ctx, text, maxWidth) {
+    const words = text.split(' ');
+    let lines = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+        let word = words[i];
+        let width = ctx.measureText(currentLine + " " + word).width;
+        if (width < maxWidth) {
+            currentLine += " " + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    lines.push(currentLine);
+    return lines;
+}
+
+function exportPNG() {
+    const canvas = document.getElementById('exportCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const rawLines = document.getElementById('items').value.trim().split('\n').filter(l => l.trim());
+    const people = Object.keys(currentTotals);
+    if (people.length === 0) return;
+
+    const padding = 30;
+    const width = 450;
+    const maxTextWidth = width - (padding * 2);
+    
+    // First pass: measure how many canvas lines are needed for wrapped items
+    ctx.font = '13px monospace';
+    let wrappedItemLines = [];
+    rawLines.forEach(line => {
+        const lines = getWrappedLines(ctx, line, maxTextWidth);
+        wrappedItemLines.push(...lines);
+    });
+
+    const headerHeight = 60;
+    const itemsSectionHeight = 40 + (wrappedItemLines.length * 20);
+    const summarySectionHeight = 50 + (people.length * 28);
+    const footerHeight = 70;
+    
+    const totalHeight = padding + headerHeight + itemsSectionHeight + summarySectionHeight + footerHeight + padding;
+
+    canvas.width = width * 2; // HiDPI Retina output
+    canvas.height = totalHeight * 2;
+    ctx.scale(2, 2);
+
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, totalHeight);
+
+    // Border
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, width - 20, totalHeight - 20);
+
+    let y = padding + 20;
+
+    // Header
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 20px -apple-system, sans-serif';
+    ctx.fillText('🧾 Bill Split Summary', padding, y);
+    y += 25;
+
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(width - padding, y);
+    ctx.stroke();
+    y += 20;
+
+    // Items Header
+    ctx.fillStyle = '#64748b';
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.fillText('ITEMS & BREAKDOWN', padding, y);
+    y += 18;
+
+    // Draw all wrapped lines full detail
+    ctx.fillStyle = '#334155';
+    ctx.font = '13px monospace';
+    wrappedItemLines.forEach(wrappedLine => {
+        ctx.fillText(wrappedLine, padding, y);
+        y += 20;
+    });
+
+    y += 10;
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(width - padding, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    y += 20;
+
+    // Individual Totals
+    ctx.fillStyle = '#64748b';
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.fillText('INDIVIDUAL TOTALS', padding, y);
+    y += 22;
+
+    for (const [name, amt] of Object.entries(currentTotals)) {
+        ctx.fillStyle = '#1e293b';
+        ctx.font = '500 14px -apple-system, sans-serif';
+        ctx.fillText(name, padding, y);
+
+        ctx.font = 'bold 14px -apple-system, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`$${amt.toFixed(2)}`, width - padding, y);
+        ctx.textAlign = 'left';
+
+        y += 28;
+    }
+
+    // Divider
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(width - padding, y);
+    ctx.stroke();
+    y += 20;
+
+    // Subtotal & Grand Total
+    ctx.fillStyle = '#64748b';
+    ctx.font = '13px -apple-system, sans-serif';
+    ctx.fillText('Subtotal (Receipt Base)', padding, y);
+    ctx.textAlign = 'right';
+    ctx.fillText(`$${currentSubtotal.toFixed(2)}`, width - padding, y);
+    ctx.textAlign = 'left';
+    y += 24;
+
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 16px -apple-system, sans-serif';
+    ctx.fillText('GRAND TOTAL', padding, y);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#10b981';
+    ctx.fillText(`$${currentGrandTotal.toFixed(2)}`, width - padding, y);
+    ctx.textAlign = 'left';
+
+    // Trigger image download
+    const link = document.createElement('a');
+    link.download = `bill-split-${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+calculate();
+</script>
+
+</body>
+</html>
