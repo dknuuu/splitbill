@@ -44,7 +44,6 @@
         button:hover { filter: brightness(0.95); }
         .btn-copy { background: var(--secondary); color: white; }
         .btn-png { background: var(--primary); color: white; }
-        .btn-clear { background: #cbd5e1; color: #334155; max-width: 90px; }
         canvas { display: none; }
     </style>
 </head>
@@ -73,7 +72,6 @@
     <div class="btn-group">
         <button class="btn-copy" onclick="copySummary()">📋 Copy Text</button>
         <button class="btn-png" onclick="exportPNG()">🖼️ Save PNG</button>
-        <button class="btn-clear" onclick="clearData()">🗑️ Reset</button>
     </div>
 </div>
 
@@ -84,24 +82,31 @@ let currentTotals = {};
 let currentSubtotal = 0;
 let currentGrandTotal = 0;
 
-// 1. Load data from localStorage on start
-function loadSavedData() {
-    const savedPeople = localStorage.getItem('splitpro_people');
-    const savedItems = localStorage.getItem('splitpro_items');
-    
-    if (savedPeople !== null) document.getElementById('people').value = savedPeople;
-    if (savedItems !== null) document.getElementById('items').value = savedItems;
-}
+// Load saved data when the page loads
+window.addEventListener('DOMContentLoaded', () => {
+    const savedPeople = localStorage.getItem('split_pro_people');
+    const savedItems = localStorage.getItem('split_pro_items');
+
+    if (savedPeople !== null) {
+        document.getElementById('people').value = savedPeople;
+    }
+    if (savedItems !== null) {
+        document.getElementById('items').value = savedItems;
+    }
+
+    calculate();
+});
 
 function calculate() {
     const peopleInput = document.getElementById('people').value;
     const itemsInput = document.getElementById('items').value;
+    
+    // Save to browser cache (localStorage)
+    localStorage.setItem('split_pro_people', peopleInput);
+    localStorage.setItem('split_pro_items', itemsInput);
+
     const warningBox = document.getElementById('name-warning');
     
-    // 2. Auto-save every keystroke to localStorage
-    localStorage.setItem('splitpro_people', peopleInput);
-    localStorage.setItem('splitpro_items', itemsInput);
-
     const people = peopleInput.split(',').map(p => p.trim()).filter(p => p !== "");
     const peopleLower = people.map(p => p.toLowerCase());
     
@@ -224,16 +229,6 @@ function render(totals, subtotal, grandTotal) {
             </div>
         </div>`;
     container.innerHTML = html;
-}
-
-function clearData() {
-    if (confirm("Clear all entries?")) {
-        localStorage.removeItem('splitpro_people');
-        localStorage.removeItem('splitpro_items');
-        document.getElementById('people').value = '';
-        document.getElementById('items').value = '';
-        calculate();
-    }
 }
 
 function copySummary() {
@@ -393,10 +388,6 @@ function exportPNG() {
     link.href = canvas.toDataURL('image/png');
     link.click();
 }
-
-// Load saved inputs first, then compute
-loadSavedData();
-calculate();
 </script>
 
 </body>
