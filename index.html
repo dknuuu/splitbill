@@ -1,394 +1,488 @@
+<!--
+  Split Bill v1.00, built 2026-11-17
+  © 2026 dknuuu, MIT License
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Split Pro</title>
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --secondary: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --bg: #f8fafc;
-            --text: #1e293b;
-        }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 20px; line-height: 1.5; }
-        .card { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
-        h1 { margin: 0 0 0.5rem; font-size: 1.5rem; }
-        .section { margin-bottom: 1.2rem; }
-        label { display: block; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.5rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-        input, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 15px; transition: border-color 0.2s; box-sizing: border-box; }
-        input:focus, textarea:focus { outline: none; border-color: var(--primary); }
-        textarea { height: 180px; font-family: 'ui-monospace', monospace; margin-bottom: 4px; }
-        
-        .guide { font-size: 0.75rem; background: #f1f5f9; padding: 10px; border-radius: 8px; margin-bottom: 1rem; color: #475569; }
-        .guide code { color: var(--primary); font-weight: bold; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Split Bill</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🪙%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 
-        .error-box { color: var(--danger); font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; display: none; padding: 8px; border-radius: 6px; background: #fef2f2; }
+<style>
 
-        .results-area { background: #f1f5f9; padding: 1.5rem; border-radius: 12px; margin-top: 1rem; }
-        .person-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-        .bar-container { flex-grow: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; position: relative; }
-        .bar-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
-        .name-label { width: 85px; font-weight: 500; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .amount-label { width: 85px; text-align: right; font-weight: 700; font-size: 0.9rem; }
+:root {
+  --desk:    #F8F2D6;
+  --paper:   #EEEDE8;
+  --m-ink:   #CB6652;
+  --m-faint: #2b2b2b80;
+  --b-ink:   #407ec4;
+  --b-faint: #407ec499;
+  --warn:    #8B1818;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 24px 16px 48px;
+  background: var(--desk); color: var(--b-ink);
+  font-family: "Courier Prime", "Courier New", Courier, monospace;
+  font-size: 15px; line-height: 1.5;
+}
+main { max-width: 400px; margin: 0 auto; }
 
-        .summary-footer { margin-top: 15px; padding-top: 15px; border-top: 2px dashed #cbd5e1; }
-        .summary-line { display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .subtotal-line { font-size: 0.9rem; color: #64748b; font-weight: 500; }
-        .grand-total-line { font-weight: 800; font-size: 1.15rem; color: var(--text); margin-top: 5px; }
-        
-        .btn-group { display: flex; gap: 10px; margin-top: 1rem; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: flex; justify-content: center; align-items: center; gap: 6px; transition: filter 0.2s; }
-        button:hover { filter: brightness(0.95); }
-        .btn-copy { background: var(--secondary); color: white; }
-        .btn-png { background: var(--primary); color: white; }
-        canvas { display: none; }
-    </style>
+/* ---------- form ---------- */
+
+#header {text-align: center; font-weight: bold; font-size: 24px; text-transform: uppercase; color: var(--m-ink); margin-bottom: 8px ;}
+
+.head { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 0 4px; }
+.head:first-child { margin-top: 0; }
+label { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--m-ink); font-weight: bold; }
+.clear { flex: none; border: 0; padding: 4px 0 4px 12px; font-size: 11px; letter-spacing: .14em; color: var(--m-faint); }
+.clear:hover, .clear:focus-visible { color: var(--b-ink); box-shadow: none; text-decoration: underline; }
+
+
+input, textarea {
+  display: block; width: 100%; font: inherit; color: inherit; background: transparent;
+  border: 0; border-radius: 0; padding: 8px 0; border-bottom: 1px solid var(--m-ink);
+}
+textarea { border: 1px solid var(--m-ink); padding: 8px; height: 170px; resize: vertical; line-height: 1.4; color: var(--m-ink);}
+input:focus    { outline: none; background: transparent; box-shadow:  0 1px 0 0 var(--m-ink);}
+textarea:focus { outline: none; background: transparent; box-shadow: 0px 0px 0px 1px var(--m-ink);}
+::placeholder { color: var(--m-faint); }
+#people { color: var(--m-ink); padding: auto auto 200px;}
+.help { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: var(--m-faint); white-space: pre-wrap; }
+#warn { margin: 8px 0 0; font-size: 12px; color: var(--warn); }
+#warn div::before { content: "! "; }
+
+/* ---------- receipt ---------- */
+.paper { position: relative; margin-top: 28px; padding: 24px 20px; background: var(--paper); font-size: 14px;
+  filter: drop-shadow(1px 1px 2px rgba(0,0,0,.10)); }
+.paper::before, .paper::after { content: ""; position: absolute; left: 0; right: 0; height: 6px; }
+.paper::before { top: -5px;    background: conic-gradient(from 135deg at 50% 0,    var(--paper) 90deg, transparent 0) 0 0 / 12px 6px repeat-x; }
+.paper::after  { bottom: -5px; background: conic-gradient(from -45deg at 50% 100%, var(--paper) 90deg, transparent 0) 0 0 / 12px 6px repeat-x; }
+.paper .title { text-align: center; font-weight: 700; font-size: 18px; letter-spacing: .1em; color: var(--m-ink);}
+.paper .center { text-align: center; font-size: 12px; color: var(--b-faint); }
+.paper .rule { border-top: 1px dashed var(--b-ink); margin: 10px 0; }
+.paper .gap { height: 8px; }
+.paper .row { display: flex; align-items: baseline; gap: 6px; }
+.paper .l { min-width: 0; overflow-wrap: anywhere; }
+.paper .dots { flex: 1 1 12px; min-width: 12px; border-bottom: 1.5px dotted var(--b-ink); transform: translateY(-3px); }
+.paper .r { white-space: nowrap; }
+.paper .row.big { font-size: 17px; font-weight: 700; }
+.paper .text { overflow-wrap: anywhere; }
+.paper .sub + .row { margin-top: 8px; }
+.paper .sub { font-size: 12px; color: var(--b-faint); margin-top: -2px; overflow-wrap: anywhere; }
+
+/* ---------- actions ---------- */
+.actions { display: flex; gap: 8px; margin-top: 18px; }
+button {
+  flex: 1; font: inherit; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  padding: 10px; color: var(--m-ink); background: transparent; border: 1px solid var(--m-ink);
+  border-radius: 0; cursor: pointer;
+}
+button:hover, button:focus-visible { color: var(--m-ink); outline: none; box-shadow: 0px 0px 0px 1px var(--m-ink); }
+
+@media print {
+  body { background: #fff; padding: 0; }
+  .form, .actions { display: none; }
+  .paper { margin: 0 auto; filter: none; }
+  .paper::before, .paper::after { display: none; }
+}
+</style>
 </head>
 <body>
+<main>
 
-<div class="card">
-    <h1>💸 Split Pro</h1>
-    
-    <div class="section">
-        <label>Names</label>
-        <input type="text" id="people" placeholder="Andy, Bobby, Chloe" oninput="calculate()">
-    </div>
+  <header id="header">Split Bill</header>
 
-    <div class="guide">
-        <code>eq</code> (all) | <code>prop</code> (tax/tip) | <code>for Name xQty</code> (custom qty) | <code>-val</code> (discount)
-    </div>
+  <section class="form">
+    <div class="head"><label for="people">Names</label><button type="button" class="clear" data-clear="people">clear</button></div>
+    <input id="people" type="text" placeholder="Andy, Bobby, Chloe" autocomplete="off">
 
-    <div class="section">
-        <label>Items</label>
-        <textarea id="items" placeholder="2 steak 29 for Andy, Bobby&#10;7 beer 35 for Andy x5, Bobby x2&#10;fish 17 for Chloe&#10;drink 32 eq&#10;discount -5 eq&#10;tips 15% prop" oninput="calculate()"></textarea>
-        <div id="name-warning" class="error-box"></div>
-    </div>
+    <div class="head"><label for="items">Items</label><button type="button" class="clear" data-clear="items">clear</button></div>
+    <textarea id="items" spellcheck="false" placeholder="2 steak 56 for Andy, Bobby
+salmon 22 for Chloe
+3 beer 21 for Andy x2, Bobby
+salad 12 eq
+discount -10 eq
+tax 7%
+paid by Bobby"></textarea>
+    <div id="warn"></div>
+    <p class="help">item price eq            split between everyone
+item price for A, B x2   split by qty (default 1)
+item -5 eq               discount
+VAT 7%, tip 20 prop      added pro rata
+tip 15% eq               same, split equally
+paid by Bobby            shown at the bottom</p>
+  </section>
 
-    <div id="output" class="results-area"></div>
+  <div id="paper" class="paper"></div>
 
-    <div class="btn-group">
-        <button class="btn-copy" onclick="copySummary()">📋 Copy Text</button>
-        <button class="btn-png" onclick="exportPNG()">🖼️ Save PNG</button>
-    </div>
-</div>
-
-<canvas id="exportCanvas"></canvas>
+  <div class="actions">
+    <button id="btn-copy" type="button">Copy text</button>
+    <button id="btn-png" type="button">Save PNG</button>
+    <button id="btn-share" type="button">Share</button>
+  </div>
+</main>
 
 <script>
-let currentTotals = {};
-let currentSubtotal = 0;
-let currentGrandTotal = 0;
+// ENGINE START
 
-// Load saved data when the page loads
-window.addEventListener('DOMContentLoaded', () => {
-    const savedPeople = localStorage.getItem('split_pro_people');
-    const savedItems = localStorage.getItem('split_pro_items');
+// in put yr currency here, if u want.
+const CUR = '';
 
-    if (savedPeople !== null) {
-        document.getElementById('people').value = savedPeople;
+const fmt = n => {
+  const v = Math.round(n * 100) / 100;
+  return (v < 0 ? '-' : '') + CUR + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const pad2 = n => String(n).padStart(2, '0');
+const stamp = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}  ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+function parseNames(str) {
+  const seen = new Set(), out = [];
+  str.split(',').forEach(s => {
+    const n = s.trim(), k = n.toLowerCase();
+    if (!n || seen.has(k)) return;
+    seen.add(k); out.push(n);
+  });
+  return out;
+}
+
+// "<desc> <amount>[%] <eq|prop|for> [names]" - the mode keyword must follow the amount,
+// so item names like "forks" or "equipment" and person names like "Alex" cannot confuse it.
+const LINE_RE = /^(.*?)(-?\d+(?:\.\d+)?)\s*(%)?\s*(eq|prop|for)\b\s*(.*)$/i;
+
+// Round every share to cents, then give the leftover cents to the biggest remainders,
+// so the shares always add up to the total exactly.
+function splitCents(totals, grand) {
+  const names = Object.keys(totals);
+  const base = names.map(n => Math.floor(totals[n] * 100 + 1e-9));
+  let left = Math.round(grand * 100) - base.reduce((a, b) => a + b, 0);
+  const order = names.map((n, i) => ({ i, rem: totals[n] * 100 - base[i] })).sort((a, b) => b.rem - a.rem);
+  for (let k = 0; left > 0 && order.length; k++, left--) base[order[k % order.length].i]++;
+  const out = {};
+  names.forEach((n, i) => out[n] = base[i] / 100);
+  return out;
+}
+
+// "2 steak" -> "Steak": drop the leading count, capitalise.
+const shortName = d => {
+  const s = d.replace(/^\d+(?:\.\d+)?\s+/, '');
+  return (s.charAt(0).toUpperCase() + s.slice(1)) || 'Item';
+};
+
+function compute(peopleStr, itemsStr) {
+  const people = parseNames(peopleStr);
+  const res = { people, totals: {}, items: [], shares: {}, props: [], subtotal: 0, grand: 0, payer: null, warnings: [] };
+  if (!people.length) return res;
+
+  const byLower = new Map(people.map(p => [p.toLowerCase(), p]));
+  people.forEach(p => { res.totals[p] = 0; res.shares[p] = []; });
+  const pending = [];
+
+  itemsStr.split('\n').forEach((raw, i) => {
+    const ln = i + 1, line = raw.trim().replace(/%$/, '% prop');
+    if (!line) return;
+
+    const pm = line.match(/^paid by\s+(.+)$/i);
+    if (pm) { res.payer = pm[1].trim(); return; }
+
+    const m = line.match(LINE_RE);
+    if (!m) { res.warnings.push(`line ${ln}: can't read "${line}"`); return; }
+
+    const desc = m[1].trim().replace(/\s+/g, ' ');
+    const val = parseFloat(m[2]);
+    const pct = !!m[3];
+    const mode = m[4].toLowerCase();
+    const rest = m[5].trim();
+
+    if (mode === 'prop' || (mode === 'eq' && pct)) { pending.push({ ln, desc, val, pct, mode }); return; }
+    if (pct) { res.warnings.push(`line ${ln}: % only works with prop or eq`); return; }
+
+    if (mode === 'eq') {
+      const share = val / people.length;
+      people.forEach(p => { res.totals[p] += share; res.shares[p].push({ label: shortName(desc), amount: share }); });
+      res.subtotal += val;
+      res.items.push({ label: desc || 'ITEM', amount: val, sub: 'EVERYONE' });
+      return;
     }
-    if (savedItems !== null) {
-        document.getElementById('items').value = savedItems;
+
+    // mode === 'for'
+    const targets = [], subParts = [];
+    let units = 0;
+    rest.split(',').map(s => s.trim()).filter(Boolean).forEach(entry => {
+      let name = entry, qty = null;
+      if (!byLower.has(entry.toLowerCase())) {
+        const q = entry.match(/^(.+?)\s*[x×]\s*(\d+(?:\.\d+)?)$/i);
+        if (q) { name = q[1].trim(); qty = parseFloat(q[2]); }
+      }
+      const person = byLower.get(name.toLowerCase());
+      if (!person) { res.warnings.push(`line ${ln}: unknown name "${name}"`); return; }
+      const n = qty === null ? 1 : qty;
+      if (!(n > 0)) { res.warnings.push(`line ${ln}: bad quantity for ${person}`); return; }
+      targets.push({ person, n, x: qty !== null });
+      units += n;
+      subParts.push(person.toUpperCase() + (qty !== null ? ' X' + qty : ''));
+    });
+
+    if (!targets.length) { res.warnings.push(`line ${ln}: nobody to charge`); return; }
+    const unit = val / units;
+    targets.forEach(t => {
+      res.totals[t.person] += unit * t.n;
+      res.shares[t.person].push({ label: shortName(desc) + (t.x ? ' x' + t.n : ''), amount: unit * t.n });
+    });
+    res.subtotal += val;
+    res.items.push({ label: desc || 'ITEM', amount: val, sub: subParts.join(', ') });
+  });
+
+  let propTotal = 0;
+  pending.forEach(p => {
+    const cur = Object.values(res.totals).reduce((a, b) => a + b, 0);
+    if (cur === 0) { res.warnings.push(`line ${p.ln}: nothing to apply it to`); return; }
+    const charge = Math.round((p.pct ? cur * p.val / 100 : p.val) * 100) / 100;
+    const label = shortName(p.desc || 'Extra') + (p.pct ? ` ${p.val}%` : '');
+    people.forEach(n => {
+      const part = p.mode === 'eq' ? charge / people.length : charge * (res.totals[n] / cur);
+      res.totals[n] += part;
+      res.shares[n].push({ label, amount: part });
+    });
+    propTotal += charge;
+    res.props.push({ label: (p.desc || 'EXTRA') + (p.pct ? ` ${p.val}%` : ''), amount: charge });
+  });
+
+  res.grand = res.subtotal + propTotal;
+  res.totals = splitCents(res.totals, res.grand);
+  return res;
+}
+
+// Receipt model: one source for the on-screen paper, the copied text and the PNG.
+function buildReceipt(r, now) {
+  const m = [{ t: 'title', text: 'SPLIT BILL' }, { t: 'center', text: stamp(now) }, { t: 'rule' }];
+  if (!r.people.length) { m.push({ t: 'center', text: 'ADD NAMES TO START' }); return m; }
+  if (!r.items.length) m.push({ t: 'center', text: 'NO ITEMS YET' });
+  r.people.forEach(p => {
+    m.push({ t: 'row', l: p.toUpperCase(), r: fmt(r.totals[p]) });
+    if (r.shares[p].length) m.push({ t: 'sub', text: r.shares[p].map(s => `${s.label} ${fmt(s.amount)}`.replace(/ /g, '\u00a0')).join(', ') });
+  });
+  m.push({ t: 'rule' }, { t: 'row', l: 'TOTAL', r: fmt(r.grand), big: true });
+  if (r.payer) m.push({ t: 'gap' }, { t: 'text', text: 'PAID BY ' + r.payer.toUpperCase() });
+  m.push({ t: 'rule' });
+  return m;
+}
+
+function wrapWords(s, w) {
+  const out = []; let cur = '';
+  s.split(' ').forEach(word => {
+    if (!cur) cur = word;
+    else if ((cur + ' ' + word).length <= w) cur += ' ' + word;
+    else { out.push(cur); cur = word; }
+  });
+  out.push(cur);
+  return out;
+}
+
+function toText(m, W = 34) {
+  const out = [];
+  m.forEach(it => {
+    if (it.t === 'title' || it.t === 'center') out.push(' '.repeat(Math.max(0, Math.floor((W - it.text.length) / 2))) + it.text);
+    else if (it.t === 'gap') out.push('');
+    else if (it.t === 'rule') out.push('-'.repeat(W));
+    else if (it.t === 'text') wrapWords(it.text, W).forEach(l => out.push(l));
+    else if (it.t === 'sub') wrapWords(it.text, W).forEach(l => out.push(l));
+    else if (it.t === 'row') {
+      const room = W - it.r.length - 2;
+      const ls = wrapWords(it.l, room > 8 ? room : W);
+      ls.slice(0, -1).forEach(l => out.push(l));
+      const last = ls[ls.length - 1];
+      if (last.length <= room) out.push(last + ' ' + '.'.repeat(room - last.length) + ' ' + it.r);
+      else { out.push(last); out.push(' '.repeat(Math.max(0, W - it.r.length)) + it.r); }
     }
+  });
+  return out.join('\n');
+}
+// ENGINE END
 
-    calculate();
-});
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let model = [];
 
-function calculate() {
-    const peopleInput = document.getElementById('people').value;
-    const itemsInput = document.getElementById('items').value;
-    
-    // Save to browser cache (localStorage)
-    localStorage.setItem('split_pro_people', peopleInput);
-    localStorage.setItem('split_pro_items', itemsInput);
-
-    const warningBox = document.getElementById('name-warning');
-    
-    const people = peopleInput.split(',').map(p => p.trim()).filter(p => p !== "");
-    const peopleLower = people.map(p => p.toLowerCase());
-    
-    if (people.length === 0) {
-        document.getElementById('output').innerHTML = "Enter names to see results...";
-        warningBox.style.display = 'none';
-        return;
+function renderHTML(m) {
+  return m.map(it => {
+    switch (it.t) {
+      case 'title': return `<div class="title">${esc(it.text)}</div>`;
+      case 'center': return `<div class="center">${esc(it.text)}</div>`;
+      case 'rule': return '<div class="rule"></div>';
+      case 'gap': return '<div class="gap"></div>';
+      case 'text': return `<div class="text">${esc(it.text)}</div>`;
+      case 'sub': return `<div class="sub">${esc(it.text)}</div>`;
+      case 'row': return `<div class="row${it.big ? ' big' : ''}"><span class="l">${esc(it.l)}</span><span class="dots"></span><span class="r">${esc(it.r)}</span></div>`;
     }
+    return '';
+  }).join('');
+}
 
-    let totals = {};
-    people.forEach(p => totals[p] = 0);
+function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 
-    const lines = itemsInput.split('\n');
-    let subtotal = 0;
-    let propItems = [];
-    let unknownNames = new Set();
+document.querySelectorAll('.clear').forEach(b => b.addEventListener('click', () => {
+  const el = $(b.dataset.clear);
+  if (!el.value.trim()) return;
+  if (!confirm(`Clear ${b.dataset.clear === 'people' ? 'names' : 'items'}?`)) return;
+  el.value = ''; update(); el.focus();
+}));
 
-    lines.forEach(line => {
-        const cleanLine = line.trim().toLowerCase();
-        if (!cleanLine) return;
+function update() {
+  const p = $('people').value, i = $('items').value;
+  store('split_pro_people', p); store('split_pro_items', i);
+  const r = compute(p, i);
+  model = buildReceipt(r, new Date());
+  $('paper').innerHTML = renderHTML(model);
+  $('warn').innerHTML = r.warnings.map(w => `<div>${esc(w)}</div>`).join('');
+}
 
-        const amountMatch = cleanLine.match(/(-?\d+(\.\d+)?)\s*(%|for|eq|prop)/i) || cleanLine.match(/(-?\d+(\.\d+)?)/);
-        if (!amountMatch) return;
-        const val = parseFloat(amountMatch[1]);
+async function copyText() {
+  const text = toText(model);
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {}
+  if (!ok) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+  }
+  const b = $('btn-copy');
+  b.textContent = ok ? 'Copied' : 'Copy failed';
+  setTimeout(() => b.textContent = 'Copy text', 1500);
+}
 
-        if (cleanLine.includes('prop')) {
-            propItems.push({ line: cleanLine, val: val });
-        } else if (cleanLine.includes('eq')) {
-            const share = val / people.length;
-            people.forEach(p => totals[p] += share);
-            subtotal += val;
-        } else if (cleanLine.includes('for')) {
-            const namesPart = cleanLine.split('for')[1] || "";
-            const entries = namesPart.split(',').map(e => e.trim()).filter(e => e !== "");
-            
-            let targets = [];
-            let totalUnits = 0;
+// ---------- PNG (canvas, same model) ----------
+const FONT = '"Courier Prime","Courier New",monospace';
+const TITLE_COLOR = '#CB6652';
 
-            entries.forEach(entry => {
-                const parts = entry.split('x');
-                const rawName = parts[0].trim();
-                const qty = parts[1] ? parseFloat(parts[1]) : 1;
+function wrapCanvas(ctx, text, max) {
+  const out = []; let cur = '';
+  text.split(' ').forEach(word => {
+    if (!cur) cur = word;
+    else if (ctx.measureText(cur + ' ' + word).width <= max) cur += ' ' + word;
+    else { out.push(cur); cur = word; }
+  });
+  out.push(cur);
+  return out;
+}
 
-                if (rawName && !peopleLower.includes(rawName)) {
-                    unknownNames.add(rawName);
-                }
+function paint(ctx, m, W, draw) {
+  const P = 26, inner = W - 2 * P, LH = 22;
+  const INK = '#407ec4', FAINT = '#85abd3', LINE = '#85abd3';
+  const font = (sz, bold) => ctx.font = `${bold ? 700 : 400} ${sz}px ${FONT}`;
+  let y = P + 14;
 
-                const matchedName = people.find(p => p.toLowerCase() === rawName);
-                if (matchedName && !isNaN(qty) && qty > 0) {
-                    targets.push({ name: matchedName, qty: qty });
-                    totalUnits += qty;
-                }
-            });
-
-            if (targets.length > 0 && totalUnits > 0) {
-                const unitPrice = val / totalUnits;
-                targets.forEach(target => {
-                    totals[target.name] += unitPrice * target.qty;
-                });
-                subtotal += val;
+  m.forEach(it => {
+    if (it.t === 'title' || it.t === 'center') {
+      const title = it.t === 'title';
+      font(title ? 20 : 12, title);
+      if (draw) { ctx.fillStyle = title ? TITLE_COLOR : FAINT; ctx.textAlign = 'center'; ctx.fillText(it.text, W / 2, y); }
+      y += title ? LH + 2 : LH - 4;
+    } else if (it.t === 'gap') {
+      y += 10;
+    } else if (it.t === 'rule') {
+      if (draw) {
+        ctx.strokeStyle = LINE; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(P, y - 6); ctx.lineTo(W - P, y - 6); ctx.stroke(); ctx.setLineDash([]);
+      }
+      y += 16;
+    } else if (it.t === 'sub') {
+      font(12, false);
+      wrapCanvas(ctx, it.text, inner).forEach(l => {
+        if (draw) { ctx.fillStyle = FAINT; ctx.textAlign = 'left'; ctx.fillText(l, P, y); }
+        y += LH - 5;
+      });
+      y += 8;
+    } else if (it.t === 'text') {
+      font(15, false);
+      wrapCanvas(ctx, it.text, inner).forEach(l => {
+        if (draw) { ctx.fillStyle = INK; ctx.textAlign = 'left'; ctx.fillText(l, P, y); }
+        y += LH;
+      });
+    } else if (it.t === 'row') {
+      const size = it.big ? 18 : 15;
+      font(size, it.big);
+      const rw = ctx.measureText(it.r).width;
+      const lines = wrapCanvas(ctx, it.l, inner - rw - 14);
+      lines.forEach((l, k) => {
+        if (draw) {
+          ctx.fillStyle = INK; ctx.textAlign = 'left'; ctx.fillText(l, P, y);
+          if (k === 0) {
+            ctx.textAlign = 'right'; ctx.fillText(it.r, W - P, y);
+            const x1 = P + ctx.measureText(l).width + 6, x2 = W - P - rw - 6;
+            if (x2 - x1 > 8) {
+              ctx.strokeStyle = LINE; ctx.lineWidth = 1.5; ctx.setLineDash([1.5, 3]);
+              ctx.beginPath(); ctx.moveTo(x1, y - 3); ctx.lineTo(x2, y - 3); ctx.stroke(); ctx.setLineDash([]);
             }
+          }
         }
-    });
-
-    if (unknownNames.size > 0) {
-        warningBox.innerText = `⚠️ Unknown names: ${Array.from(unknownNames).join(', ')}`;
-        warningBox.style.display = 'block';
-    } else {
-        warningBox.style.display = 'none';
+        y += LH;
+      });
+      if (it.big) y += 4;
     }
-
-    let propTotal = 0;
-    propItems.forEach(item => {
-        const isPercent = item.line.includes('%');
-        const currentTotal = Object.values(totals).reduce((a, b) => a + b, 0);
-        if (currentTotal === 0) return;
-
-        const chargeAmount = isPercent ? (currentTotal * (item.val / 100)) : item.val;
-        propTotal += chargeAmount;
-        
-        people.forEach(p => {
-            const ratio = totals[p] / currentTotal;
-            totals[p] += chargeAmount * ratio;
-        });
-    });
-
-    currentTotals = totals;
-    currentSubtotal = subtotal;
-    currentGrandTotal = subtotal + propTotal;
-
-    render(totals, subtotal, currentGrandTotal);
+  });
+  return y + P - 14;
 }
 
-function render(totals, subtotal, grandTotal) {
-    const container = document.getElementById('output');
-    let maxVal = Math.max(...Object.values(totals), 0.01); 
-    let html = '<label>Summary</label>';
-
-    for (const [name, amount] of Object.entries(totals)) {
-        const displayWidth = Math.max(0, (amount / maxVal) * 100);
-        html += `
-            <div class="person-row">
-                <div class="name-label">${name}</div>
-                <div class="bar-container">
-                    <div class="bar-fill" style="width: ${displayWidth}%"></div>
-                </div>
-                <div class="amount-label">$${amount.toFixed(2)}</div>
-            </div>`;
-    }
-
-    html += `
-        <div class="summary-footer">
-            <div class="summary-line subtotal-line">
-                <span>Subtotal (Receipt Base)</span>
-                <span>$${subtotal.toFixed(2)}</span>
-            </div>
-            <div class="summary-line grand-total-line">
-                <span>GRAND TOTAL</span>
-                <span>$${grandTotal.toFixed(2)}</span>
-            </div>
-        </div>`;
-    container.innerHTML = html;
+async function renderPNG() {
+  try {
+    await document.fonts.load(`400 15px "Courier Prime"`);
+    await document.fonts.load(`700 15px "Courier Prime"`);
+  } catch (e) {}
+  const W = 380, c = document.createElement('canvas'), ctx = c.getContext('2d');
+  const h = Math.ceil(paint(ctx, model, W, false));
+  c.width = W * 2; c.height = h * 2;
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  ctx.fillStyle = '#EEEDE8'; ctx.fillRect(0, 0, W, h);
+  ctx.textBaseline = 'alphabetic';
+  paint(ctx, model, W, true);
+  return new Promise(resolve => c.toBlob(resolve, 'image/png'));
 }
 
-function copySummary() {
-    const rows = document.querySelectorAll('.person-row');
-    const sub = document.querySelector('.subtotal-line span:last-child').innerText;
-    const total = document.querySelector('.grand-total-line span:last-child').innerText;
-    
-    let text = `🧾 *Bill Split Summary*\n---\n`;
-    rows.forEach(row => {
-        text += `${row.querySelector('.name-label').innerText}: ${row.querySelector('.amount-label').innerText}\n`;
-    });
-    text += `---\nSubtotal: ${sub}\n*Grand Total: ${total}*`;
+const pngName = () => {
+  const d = new Date();
+  return `split-${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}.png`;
+};
 
-    navigator.clipboard.writeText(text).then(() => {
-        const btn = document.querySelector('.btn-copy');
-        btn.innerText = "✅ Copied!";
-        setTimeout(() => btn.innerText = "📋 Copy Text", 2000);
-    });
+async function exportPNG() {
+  const blob = await renderPNG();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = pngName(); a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-function getWrappedLines(ctx, text, maxWidth) {
-    const words = text.split(' ');
-    let lines = [];
-    let currentLine = words[0];
-
-    for (let i = 1; i < words.length; i++) {
-        let word = words[i];
-        let width = ctx.measureText(currentLine + " " + word).width;
-        if (width < maxWidth) {
-            currentLine += " " + word;
-        } else {
-            lines.push(currentLine);
-            currentLine = word;
-        }
-    }
-    lines.push(currentLine);
-    return lines;
+async function sharePNG() {
+  const file = new File([await renderPNG()], pngName(), { type: 'image/png' });
+  try { await navigator.share({ files: [file], title: 'Split Bill' }); } catch (e) {} // cancelling the sheet throws; ignore
 }
 
-function exportPNG() {
-    const canvas = document.getElementById('exportCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    const rawLines = document.getElementById('items').value.trim().split('\n').filter(l => l.trim());
-    const people = Object.keys(currentTotals);
-    if (people.length === 0) return;
+// ---------- init ----------
+const sp = load('split_pro_people'), si = load('split_pro_items');
+if (sp !== null) $('people').value = sp;
+if (si !== null) $('items').value = si;
+$('people').addEventListener('input', update);
+$('items').addEventListener('input', update);
+$('btn-copy').addEventListener('click', copyText);
+$('btn-png').addEventListener('click', exportPNG);
+$('btn-share').addEventListener('click', sharePNG);
 
-    const padding = 30;
-    const width = 450;
-    const maxTextWidth = width - (padding * 2);
-    
-    ctx.font = '13px monospace';
-    let wrappedItemLines = [];
-    rawLines.forEach(line => {
-        const lines = getWrappedLines(ctx, line, maxTextWidth);
-        wrappedItemLines.push(...lines);
-    });
-
-    const headerHeight = 60;
-    const itemsSectionHeight = 40 + (wrappedItemLines.length * 20);
-    const summarySectionHeight = 50 + (people.length * 28);
-    const footerHeight = 70;
-    
-    const totalHeight = padding + headerHeight + itemsSectionHeight + summarySectionHeight + footerHeight + padding;
-
-    canvas.width = width * 2;
-    canvas.height = totalHeight * 2;
-    ctx.scale(2, 2);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, totalHeight);
-
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, width - 20, totalHeight - 20);
-
-    let y = padding + 20;
-
-    ctx.fillStyle = '#1e293b';
-    ctx.font = 'bold 20px -apple-system, sans-serif';
-    ctx.fillText('🧾 Bill Split Summary', padding, y);
-    y += 25;
-
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
-    ctx.stroke();
-    y += 20;
-
-    ctx.fillStyle = '#64748b';
-    ctx.font = 'bold 11px -apple-system, sans-serif';
-    ctx.fillText('ITEMS & BREAKDOWN', padding, y);
-    y += 18;
-
-    ctx.fillStyle = '#334155';
-    ctx.font = '13px monospace';
-    wrappedItemLines.forEach(wrappedLine => {
-        ctx.fillText(wrappedLine, padding, y);
-        y += 20;
-    });
-
-    y += 10;
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    y += 20;
-
-    ctx.fillStyle = '#64748b';
-    ctx.font = 'bold 11px -apple-system, sans-serif';
-    ctx.fillText('INDIVIDUAL TOTALS', padding, y);
-    y += 22;
-
-    for (const [name, amt] of Object.entries(currentTotals)) {
-        ctx.fillStyle = '#1e293b';
-        ctx.font = '500 14px -apple-system, sans-serif';
-        ctx.fillText(name, padding, y);
-
-        ctx.font = 'bold 14px -apple-system, sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText(`$${amt.toFixed(2)}`, width - padding, y);
-        ctx.textAlign = 'left';
-
-        y += 28;
-    }
-
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
-    ctx.stroke();
-    y += 20;
-
-    ctx.fillStyle = '#64748b';
-    ctx.font = '13px -apple-system, sans-serif';
-    ctx.fillText('Subtotal (Receipt Base)', padding, y);
-    ctx.textAlign = 'right';
-    ctx.fillText(`$${currentSubtotal.toFixed(2)}`, width - padding, y);
-    ctx.textAlign = 'left';
-    y += 24;
-
-    ctx.fillStyle = '#1e293b';
-    ctx.font = 'bold 16px -apple-system, sans-serif';
-    ctx.fillText('GRAND TOTAL', padding, y);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#10b981';
-    ctx.fillText(`$${currentGrandTotal.toFixed(2)}`, width - padding, y);
-    ctx.textAlign = 'left';
-
-    const link = document.createElement('a');
-    link.download = `bill-split-${new Date().toISOString().slice(0,10)}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-}
+const canShare = (() => {
+  try { return !!navigator.canShare && navigator.canShare({ files: [new File([''], 'x.png', { type: 'image/png' })] }); }
+  catch (e) { return false; }
+})();
+if (!canShare) $('btn-share').hidden = true;
+update();
 </script>
-
 </body>
 </html>
