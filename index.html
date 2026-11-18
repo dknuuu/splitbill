@@ -17,12 +17,12 @@
 <style>
 
 :root {
-  --desk:    #F8F2D6;
+  --desk:    #FCB34F;
   --paper:   #EEEDE8;
-  --m-ink:   #CB6652;
+  --m-ink:   #E62A34;
   --m-faint: #2b2b2b80;
-  --b-ink:   #407ec4;
-  --b-faint: #407ec499;
+  --b-ink:   #1F6590;
+  --b-faint: #1F659099;
   --warn:    #8B1818;
 }
 * { box-sizing: border-box; }
@@ -364,7 +364,7 @@ async function copyText() {
 
 // ---------- PNG (canvas, same model) ----------
 const FONT = '"Courier Prime","Courier New",monospace';
-const TITLE_COLOR = '#CB6652';
+const TITLE_COLOR = '#E62A34';
 
 function wrapCanvas(ctx, text, max) {
   const out = []; let cur = '';
@@ -379,7 +379,7 @@ function wrapCanvas(ctx, text, max) {
 
 function paint(ctx, m, W, draw) {
   const P = 26, inner = W - 2 * P, LH = 22;
-  const INK = '#407ec4', FAINT = '#85abd3', LINE = '#85abd3';
+  const INK = '#1F6590', FAINT = '#729cb3', LINE = '#729cb3';
   const font = (sz, bold) => ctx.font = `${bold ? 700 : 400} ${sz}px ${FONT}`;
   let y = P + 14;
 
